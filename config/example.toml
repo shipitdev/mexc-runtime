@@ -1,0 +1,60 @@
+[mode]
+exchange = "mexc"
+environment = "testnet"
+market_type = "spot"
+
+[auth]
+api_key = "env:MEXC_KEY"
+api_secret = "env:MEXC_SECRET"
+telegram_session = "file:secrets/tdlib.session"
+
+[trading]
+default_base_notional = 200.0
+max_notional = 1000.0
+max_open_positions = 2
+order_type = "market"
+slippage_bps = 50
+
+[parser]
+required_tokens = ["MEGA PUMP SIGNAL", "Targets"]
+link_host = "www.mexc.com"
+link_path_prefix = "/exchange/"
+pair_separator = "_"
+
+[risk]
+take_profit_pct = 0.25
+stop_loss_pct = 0.05
+breakeven_arm_pct = 0.10
+cooldown_seconds = 45
+max_daily_loss = 500.0
+max_daily_trades = 20
+max_position_hours = 12
+
+[pnl_exit]
+trailing_enable = true
+trail_start_pct = 0.15
+trail_step_pct = 0.02
+
+[latency]
+parse_budget_ms = 20
+order_budget_ms = 80
+websocket_timeout_ms = 200
+
+[telemetry]
+log_level = "debug"
+trace_timings = true
+metrics_push = true
+metrics_endpoint = "http://localhost:9091"
+profiling_enable = false
+
+[infra]
+redis_url = "redis://localhost:6379/1"
+pg_dsn = "postgres://bot:pass@localhost:5432/mexc_bot?sslmode=disable"
+
+[debug]
+dry_run = false
+record_replay = true
+replay_dir = "replays"
+
+[target_overrides.TWIFUSDT]
+max_notional = 1500.0
