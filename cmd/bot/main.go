@@ -13,8 +13,10 @@ import (
 	"github.com/user/mexc-bot/internal/config"
 	"github.com/user/mexc-bot/internal/engine"
 	"github.com/user/mexc-bot/internal/exchange"
+	"github.com/user/mexc-bot/internal/exchange/mexc"
 	"github.com/user/mexc-bot/internal/risk"
 	signalpkg "github.com/user/mexc-bot/internal/signal"
+	"github.com/user/mexc-bot/internal/telegram"
 )
 
 func main() {
@@ -38,8 +40,22 @@ func main() {
 	if cfg.Debug.DryRun {
 		executor = exchange.NewDryRunExecutor(logger)
 	} else {
-		// Placeholder until the real MEXC executor is implemented.
-		executor = exchange.NewDryRunExecutor(logger)
+		apiKey, err := cfg.Auth.APIKey.Resolve()
+		if err != nil {
+			logger.Error("resolve api key", "error", err)
+			os.Exit(1)
+		}
+		apiSecret, err := cfg.Auth.APISecret.Resolve()
+		if err != nil {
+			logger.Error("resolve api secret", "error", err)
+			os.Exit(1)
+		}
+		mexcExec, err := mexc.NewExecutor(cfg, strings.TrimSpace(string(apiKey)), strings.TrimSpace(string(apiSecret)), logger)
+		if err != nil {
+			logger.Error("initialise mexc executor", "error", err)
+			os.Exit(1)
+		}
+		executor = mexcExec
 	}
 
 	core, err := engine.New(cfg, parser, riskManager, executor, logger)
@@ -54,13 +70,42 @@ func main() {
 	go listenForShutdown(cancel)
 
 	// TODO: wire incoming Telegram updates into msgCh.
-	msgCh := make(chan signalpkg.Message)
+	msgCh := make(chan signalpkg.Message, 64)
+	if cfg.Telegram.Enabled {
+		tokenBytes, err := cfg.Telegram.BotToken.Resolve()
+		if err != nil {
+			logger.Error("resolve telegram token", "error", err)
+			os.Exit(1)
+		}
+		tgListener, err := telegram.NewListener(cfg.Telegram, strings.TrimSpace(string(tokenBytes)), logger)
+		if err != nil {
+			logger.Error("initialise telegram listener", "error", err)
+			os.Exit(1)
+		}
+
+		go func() {
+			if err := tgListener.Run(ctx, msgCh); err != nil && ctx.Err() == nil {
+				logger.Error("telegram listener stopped", "error", err)
+				cancel()
+			}
+			close(msgCh)
+		}()
+	} else {
+		go func() {
+			<-ctx.Done()
+			close(msgCh)
+		}()
+	}
+
 	go func() {
 		for {
 			select {
 			case <-ctx.Done():
 				return
-			case msg := <-msgCh:
+			case msg, ok := <-msgCh:
+				if !ok {
+					return
+				}
 				if err := core.HandleMessage(ctx, msg); err != nil {
 					logger.Error("handle message", "error", err)
 				}

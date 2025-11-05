@@ -8,8 +8,9 @@ Low-latency trading bot scaffold that ingests templated Telegram pump signals, e
 - `internal/config`: TOML configuration loader with validation and secret helpers.
 - `internal/signal`: strict template parser that derives the pair symbol from `https://www.mexc.com/exchange/<PAIR>` links.
 - `internal/engine`: orchestrates parse → risk → execution.
-- `internal/exchange`: order executor abstractions and dry-run implementation.
-- `internal/risk`: baseline risk manager placeholder ready for stateful controls.
+- `internal/exchange`: order executor abstractions, including MEXC REST implementation and dry-run fallback.
+- `internal/risk`: cooldown-aware risk manager with daily trade limits.
+- `internal/telegram`: long-polling listener using the Telegram Bot API.
 - `config/example.toml`: reference configuration file.
 
 ## Getting Started
@@ -28,13 +29,11 @@ Low-latency trading bot scaffold that ingests templated Telegram pump signals, e
    go run ./cmd/bot -config config/local.toml
    ```
 
-The main loop exposes a `msgCh` channel where the forthcoming Telegram listener will push `signal.Message` structs. The engine already enforces the message template and symbol resolution.
+When `telegram.enabled = true` the built-in listener long-polls Telegram and pushes `signal.Message` structs into the engine. For live trading, disable `debug.dry_run`, provide MEXC API credentials, and ensure the configured bot has access to the target channel.
 
 ## Next Steps
 
-- Integrate Telegram TDLib/GramJS client to feed verified template messages into `msgCh`.
-- Implement real MEXC REST/WebSocket executor with pre-authenticated connection pools.
-- Extend `risk.SimpleManager` with stateful exposure limits, cooldowns, and PnL tracking.
+- Extend MEXC executor with futures support and WebSocket order/position listeners.
+- Add persistent storage for executions, PnL tracking, and advanced risk controls (drawdown, exposure).
 - Wire Prometheus metrics and structured logging sinks as per config.
 - Add replay recorder/runner to support backtesting and regression testing against archived signals.
-

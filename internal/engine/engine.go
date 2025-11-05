@@ -78,6 +78,8 @@ func (e *Engine) HandleMessage(ctx context.Context, msg signal.Message) error {
 		return fmt.Errorf("order submission failed: %w", err)
 	}
 
+	e.risk.RecordExecution(ctx, *sig, decision.Notional)
+
 	e.logger.InfoContext(ctx, "order submitted", "order_id", ack.OrderID, "executor", e.executor.Name(), "symbol", req.Symbol, "notional", req.Notional)
 
 	return nil

@@ -16,6 +16,7 @@ type Config struct {
 	Auth       AuthConfig             `toml:"auth"`
 	Trading    TradingConfig          `toml:"trading"`
 	Parser     ParserConfig           `toml:"parser"`
+	Telegram   TelegramConfig         `toml:"telegram"`
 	Risk       RiskConfig             `toml:"risk"`
 	PnLExit    PnLExitConfig          `toml:"pnl_exit"`
 	Latency    LatencyBudget          `toml:"latency"`
@@ -51,6 +52,14 @@ type ParserConfig struct {
 	LinkHost       string   `toml:"link_host"`
 	LinkPathPrefix string   `toml:"link_path_prefix"`
 	PairSeparator  string   `toml:"pair_separator"`
+}
+
+type TelegramConfig struct {
+	Enabled        bool      `toml:"enabled"`
+	AllowedChatIDs []int64   `toml:"allowed_chat_ids"`
+	PollTimeoutSec int       `toml:"poll_timeout_seconds"`
+	MaxUpdateBatch int       `toml:"max_update_batch"`
+	BotToken       SecretRef `toml:"bot_token"`
 }
 
 type RiskConfig struct {
@@ -187,6 +196,17 @@ func (c *Config) Validate() error {
 	}
 	if c.Parser.PairSeparator == "" {
 		return errors.New("parser pair_separator required")
+	}
+	if c.Telegram.Enabled {
+		if c.Telegram.PollTimeoutSec <= 0 {
+			return errors.New("telegram poll_timeout_seconds must be > 0 when enabled")
+		}
+		if c.Telegram.MaxUpdateBatch < 0 {
+			return errors.New("telegram max_update_batch must be >= 0")
+		}
+		if strings.TrimSpace(c.Telegram.BotToken.Value) == "" {
+			return errors.New("telegram bot_token must be provided when enabled")
+		}
 	}
 	if c.Risk.TakeProfitPct <= 0 || c.Risk.StopLossPct <= 0 {
 		return errors.New("risk take_profit_pct and stop_loss_pct must be > 0")

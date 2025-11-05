@@ -21,6 +21,13 @@ link_host = "www.mexc.com"
 link_path_prefix = "/exchange/"
 pair_separator = "_"
 
+[telegram]
+enabled = false
+allowed_chat_ids = []
+poll_timeout_seconds = 10
+max_update_batch = 50
+bot_token = "env:TELEGRAM_BOT_TOKEN"
+
 [risk]
 take_profit_pct = 0.25
 stop_loss_pct = 0.05
