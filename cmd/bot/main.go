@@ -69,15 +69,14 @@ func main() {
 
 	go listenForShutdown(cancel)
 
-	// TODO: wire incoming Telegram updates into msgCh.
 	msgCh := make(chan signalpkg.Message, 64)
 	if cfg.Telegram.Enabled {
-		tokenBytes, err := cfg.Telegram.BotToken.Resolve()
+		apiHashBytes, err := cfg.Telegram.APIHash.Resolve()
 		if err != nil {
-			logger.Error("resolve telegram token", "error", err)
+			logger.Error("resolve telegram api_hash", "error", err)
 			os.Exit(1)
 		}
-		tgListener, err := telegram.NewListener(cfg.Telegram, strings.TrimSpace(string(tokenBytes)), logger)
+		tgListener, err := telegram.NewListener(cfg.Telegram, strings.TrimSpace(string(apiHashBytes)), logger)
 		if err != nil {
 			logger.Error("initialise telegram listener", "error", err)
 			os.Exit(1)

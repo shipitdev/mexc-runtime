@@ -24,9 +24,12 @@ pair_separator = "_"
 [telegram]
 enabled = false
 allowed_chat_ids = []
-poll_timeout_seconds = 10
-max_update_batch = 50
-bot_token = "env:TELEGRAM_BOT_TOKEN"
+api_id = 0
+api_hash = "env:TELEGRAM_API_HASH"
+session_storage_path = "secrets/telegram.session"
+device_model = "mexc-bot"
+system_language = "en"
+application_version = "0.1.0"
 
 [risk]
 take_profit_pct = 0.25

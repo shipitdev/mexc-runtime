@@ -55,11 +55,14 @@ type ParserConfig struct {
 }
 
 type TelegramConfig struct {
-	Enabled        bool      `toml:"enabled"`
-	AllowedChatIDs []int64   `toml:"allowed_chat_ids"`
-	PollTimeoutSec int       `toml:"poll_timeout_seconds"`
-	MaxUpdateBatch int       `toml:"max_update_batch"`
-	BotToken       SecretRef `toml:"bot_token"`
+	Enabled            bool      `toml:"enabled"`
+	AllowedChatIDs     []int64   `toml:"allowed_chat_ids"`
+	APIID              int       `toml:"api_id"`
+	APIHash            SecretRef `toml:"api_hash"`
+	SessionStoragePath string    `toml:"session_storage_path"`
+	DeviceModel        string    `toml:"device_model"`
+	SystemLanguage     string    `toml:"system_language"`
+	ApplicationVersion string    `toml:"application_version"`
 }
 
 type RiskConfig struct {
@@ -198,14 +201,14 @@ func (c *Config) Validate() error {
 		return errors.New("parser pair_separator required")
 	}
 	if c.Telegram.Enabled {
-		if c.Telegram.PollTimeoutSec <= 0 {
-			return errors.New("telegram poll_timeout_seconds must be > 0 when enabled")
+		if c.Telegram.APIID <= 0 {
+			return errors.New("telegram api_id must be > 0 when enabled")
 		}
-		if c.Telegram.MaxUpdateBatch < 0 {
-			return errors.New("telegram max_update_batch must be >= 0")
+		if strings.TrimSpace(c.Telegram.APIHash.Value) == "" {
+			return errors.New("telegram api_hash must be provided when enabled")
 		}
-		if strings.TrimSpace(c.Telegram.BotToken.Value) == "" {
-			return errors.New("telegram bot_token must be provided when enabled")
+		if strings.TrimSpace(c.Telegram.SessionStoragePath) == "" {
+			return errors.New("telegram session_storage_path must be provided when enabled")
 		}
 	}
 	if c.Risk.TakeProfitPct <= 0 || c.Risk.StopLossPct <= 0 {
