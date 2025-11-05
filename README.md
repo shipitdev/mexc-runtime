@@ -1,4 +1,4 @@
-# MEXC Signal Bot (Golang Skeleton)
+# MEXC BOT
 
 Low-latency trading bot that ingests templated Telegram pump signals from a user-authenticated session, extracts the target pair from the embedded MEXC link, runs risk checks, and dispatches exchange orders (dry-run or live). The repository ships with full config management, message parsing, MTProto ingestion, risk limits, and a MEXC REST executor.
 
