@@ -1,10 +1,18 @@
 # MEXC Signal Bot (Golang Skeleton)
 
-Low-latency trading bot scaffold that ingests templated Telegram pump signals, extracts the target pair from the embedded MEXC link, performs risk checks, and fires exchange orders. This repository currently includes config management, message parsing, and the execution pipeline skeleton wired for dry-run mode.
+Low-latency trading bot that ingests templated Telegram pump signals from a user-authenticated session, extracts the target pair from the embedded MEXC link, runs risk checks, and dispatches exchange orders (dry-run or live). The repository ships with full config management, message parsing, MTProto ingestion, risk limits, and a MEXC REST executor.
+
+## Features
+
+- **MTProto ingestion** – connects as a Telegram user via gotd/td, filters the configured channels, and streams matching messages into the engine.
+- **Template-aware parser** – validates the pump-signal format, derives the symbol from the exchange link, and normalises it for MEXC.
+- **Risk gate** – enforces cooldowns and daily trade limits before handing an order to the exchange layer.
+- **Execution** – supports dry-run logging or live MEXC spot market orders with HMAC signing and quote-notional sizing.
+- **Configurable everything** – TOML-based configuration controls trading mode, sizing, risk, telemetry, and infrastructure options.
 
 ## Layout
 
-- `cmd/bot`: application entrypoint (`main.go`) – loads config, initialises parser/risk/executor, and exposes a channel for future Telegram integration.
+- `cmd/bot`: application entrypoint (`main.go`) – loads config, initialises parser/risk/executor, and wires the Telegram listener to the engine.
 - `internal/config`: TOML configuration loader with validation and secret helpers.
 - `internal/signal`: strict template parser that derives the pair symbol from `https://www.mexc.com/exchange/<PAIR>` links.
 - `internal/engine`: orchestrates parse → risk → execution.
@@ -23,7 +31,9 @@ Low-latency trading bot scaffold that ingests templated Telegram pump signals, e
    go test ./...
    ```
 
-4. (Optional) If you have an existing Telethon/TDesktop session, convert or copy it to the path referenced by `telegram.session_storage_path`. Otherwise, run a one-off helper (e.g. gotd/td `gotdlogin`) to create the user session file.
+4. Create or import a Telegram user session:
+   - If you already use Telethon/TDesktop, convert the session to the path configured in `telegram.session_storage_path`.
+   - Alternatively, use a gotd helper (e.g. `gotdlogin`) to authenticate once and persist the session file.
 
 5. Launch the bot in dry-run mode:
 
@@ -32,6 +42,13 @@ Low-latency trading bot scaffold that ingests templated Telegram pump signals, e
    ```
 
 When `telegram.enabled = true` the MTProto client loads the user session file, connects to Telegram, and streams authorised channel posts into the engine. The session must remain valid (2FA/password handled externally). For live trading, disable `debug.dry_run`, provide MEXC API credentials, and ensure the configured user account has access to the target channel.
+
+### Live Trading Checklist
+
+1. Set `mode.environment = "live"` and confirm `mode.market_type` matches the instruments you intend to trade.
+2. Populate `auth.api_key` / `auth.api_secret` with production credentials (use `env:` or `file:` indirections).
+3. Flip `debug.dry_run = false`.
+4. Tail logs to verify latency and fills (`log_level = "info"` or stricter once stable).
 
 ## Next Steps
 
